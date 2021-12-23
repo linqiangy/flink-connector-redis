@@ -5,10 +5,10 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.ValidationException;
-import org.apache.flink.table.catalog.ResolvedCatalogTable;
-import org.apache.flink.table.catalog.ResolvedSchema;
-import org.apache.flink.table.catalog.UniqueConstraint;
+import org.apache.flink.table.api.constraints.UniqueConstraint;
+import org.apache.flink.table.catalog.CatalogTable;
 import org.apache.flink.table.connector.format.EncodingFormat;
 import org.apache.flink.table.connector.format.Format;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
@@ -67,7 +67,7 @@ public class RedisDynamicTableSinkFactory implements DynamicTableSinkFactory {
             helper.discoverEncodingFormat(SerializationFormatFactory.class, KEY_FORMAT);
 
         helper.validate();
-        ResolvedSchema schema = context.getCatalogTable().getResolvedSchema();
+        TableSchema schema = context.getCatalogTable().getSchema();
         validateSink(tableOptions, keyEncodingFormat, schema);
 
         final ServerOption serverOption = getServerOptions(tableOptions);
@@ -105,8 +105,8 @@ public class RedisDynamicTableSinkFactory implements DynamicTableSinkFactory {
             parallelism);
     }
 
-    private Tuple2<int[], int[]> createKeyValueProjections(ResolvedCatalogTable catalogTable) {
-        ResolvedSchema schema = catalogTable.getResolvedSchema();
+    private Tuple2<int[], int[]> createKeyValueProjections(CatalogTable catalogTable) {
+        TableSchema schema = catalogTable.getSchema();
         List<String> keyFields = schema.getPrimaryKey().map(UniqueConstraint::getColumns).orElse(new ArrayList<>());
         DataType physicalDataType = schema.toPhysicalRowDataType();
 
@@ -119,7 +119,7 @@ public class RedisDynamicTableSinkFactory implements DynamicTableSinkFactory {
     }
 
     private static void validateSink(
-            ReadableConfig tableOptions, Format keyFormat, ResolvedSchema schema) {
+            ReadableConfig tableOptions, Format keyFormat, TableSchema schema) {
         validateFormat(keyFormat, tableOptions);
         validateTableSinkOptions(tableOptions);
     }
